@@ -1,0 +1,46 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Executables
+*.out
+*.app
+*.log
+
+
+*.pyc
+
+*.suo
+*.ncb
+*.aps
+*.user
+
+obj/
+bin/
+.vs/
+Release/
+
+debug/
+!/MinecraftElf/public/SOUI/third-part/skia/src/gpu/gl/debug/
+
+
+MinecraftElf/MinecraftElf/.minecraft/
