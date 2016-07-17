@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <wininet.h>
+#include <time.h>
 #include "lib/detours/detours.h"
 
 using namespace std;

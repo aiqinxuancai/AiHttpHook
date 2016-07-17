@@ -214,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HttpRecv.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -232,6 +236,10 @@
 						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\UnicodeConv.cpp"
+				>
 			</File>
 		</Filter>
 		<Filter
@@ -252,11 +260,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HttpRecv.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Singleton.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.h"
 				>
 			</File>
 			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UnicodeConv.h"
 				>
 			</File>
 		</Filter>
