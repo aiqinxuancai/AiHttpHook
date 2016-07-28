@@ -13,15 +13,28 @@
 static HINTERNET (WINAPI * OLD_HttpOpenRequestW)(HINTERNET hConnect,LPCWSTR lpszVerb,LPCWSTR lpszObjectName,LPCWSTR lpszVersion,LPCWSTR lpszReferrer,LPCWSTR * lplpszAcceptTypes,DWORD dwFlags,DWORD_PTR dwContext
 	) = HttpOpenRequestW;
 
-static BOOL (WINAPI * OLD_HttpSendRequestW)(HINTERNET hRequest,LPCWSTR lpszHeaders,DWORD dwHeadersLength,LPVOID lpOptional,DWORD dwOptionalLength
-	) = HttpSendRequestW;
+static BOOL (WINAPI * OLD_HttpSendRequestW)(HINTERNET hRequest,LPCWSTR lpszHeaders,DWORD dwHeadersLength,LPVOID lpOptional,DWORD dwOptionalLength) = HttpSendRequestW;
 
 static BOOL (WINAPI * OLD_InternetCloseHandle)(HINTERNET hInternet) = InternetCloseHandle;
 
 static BOOL (WINAPI * OLD_InternetReadFile)( HINTERNET hFile,LPVOID lpBuffer,DWORD dwNumberOfBytesToRead,LPDWORD lpdwNumberOfBytesRead) = InternetReadFile;
 
+static HINTERNET (WINAPI * OLD_InternetConnectW)(HINTERNET hInternet, LPCWSTR lpszServerName, INTERNET_PORT nServerPort, LPCWSTR lpszUserName, LPCWSTR lpszPassword,
+											 DWORD dwService, DWORD dwFlags, DWORD_PTR dwContext) = InternetConnectW;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Hook»Øµ÷º¯Êý
+
+HINTERNET WINAPI New_InternetConnectW( HINTERNET hInternet, LPCWSTR lpszServerName, INTERNET_PORT nServerPort, LPCWSTR lpszUserName, LPCWSTR lpszPassword,
+								 DWORD dwService, DWORD dwFlags, DWORD_PTR dwContext)
+{
+	HINTERNET ret = OLD_InternetConnectW(hInternet, lpszServerName, nServerPort, lpszUserName,lpszPassword,dwService,dwFlags,dwContext);
+	wstring serverName = lpszServerName;
+	CHttpRecv::Instance().AddServerName((DWORD)ret, serverName);
+	
+	return ret;
+}
+
 BOOL WINAPI New_InternetReadFile( HINTERNET hFile,LPVOID lpBuffer,DWORD dwNumberOfBytesToRead,LPDWORD lpdwNumberOfBytesRead)
 {
 	BOOL ret = OLD_InternetReadFile(hFile, lpBuffer, dwNumberOfBytesToRead, lpdwNumberOfBytesRead);
@@ -44,12 +57,13 @@ BOOL WINAPI New_InternetCloseHandle(HINTERNET hRequest)
 	BOOL ret = OLD_InternetCloseHandle(hRequest);
 
 	wstring file = L"";
+	wstring serverName = L"";
 	string send = "";
-	string retByte = CHttpRecv::Instance().CloseId((DWORD)hRequest, file, send);
+	string retByte = CHttpRecv::Instance().CloseId((DWORD)hRequest, file, send, serverName);
 	if (retByte.empty() == false)
 	{
 		CHttpRecv::Instance().CheckIdTime();
-		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(file).c_str(), retByte, send.c_str());
+		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(file).c_str(), retByte, send.c_str(),ConvertUnicodeToMultiBytes(serverName).c_str());
 	}
 	return ret;
 }
@@ -87,11 +101,12 @@ HINTERNET WINAPI New_HttpOpenRequestW(
 	HINTERNET ret = OLD_HttpOpenRequestW(hConnect, lpszVerb, lpszObjectName, lpszVersion, lpszReferrer, lplpszAcceptTypes, dwFlags, dwContext);
 	wstring file = L"";
 	string send = "";
-	string retByte = CHttpRecv::Instance().CloseId((DWORD)ret, file, send);
+	wstring serverName = L"";
+	string retByte = CHttpRecv::Instance().CloseId((DWORD)ret, file, send, serverName);
 	if (retByte.empty() == false)
 	{
 		CHttpRecv::Instance().CheckIdTime();
-		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(file).c_str(), retByte, send.c_str());
+		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(file).c_str(), retByte, send.c_str(),ConvertUnicodeToMultiBytes(serverName).c_str());
 	}
 	
 	wstring ver = lpszVerb;
@@ -123,6 +138,8 @@ AIHTTPHOOK_API int StartPageHook(PVOID _proc)
 	HookAPI(&(PVOID&)OLD_InternetReadFile, New_InternetReadFile);
 	OutputDebugPrintf(L"AiHttpHook:StartPageHook:End");
 
+	HookAPI(&(PVOID&)OLD_InternetConnectW, New_InternetConnectW);
+	OutputDebugPrintf(L"AiHttpHook:StartPageHook:End");
 
 	return 0;
 }

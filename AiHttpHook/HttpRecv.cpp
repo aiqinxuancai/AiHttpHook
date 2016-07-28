@@ -21,14 +21,14 @@ BOOL CHttpRecv::SetCallback(PVOID _proc)
 	return TRUE;
 }
 
-BOOL CHttpRecv::Call(const char * file, string & data, const char * send) //, DWORD _data_len
+BOOL CHttpRecv::Call(const char * file, string & data, const char * send, const char * serverName) //, DWORD _data_len
 {
 	//为了避免其他程序读到非0x00结尾 所以先copy一下
 	int len = data.length() + 2;
 	char * dataUse = new char[len];
 	memset(dataUse, 0, len);
 	memcpy(dataUse, data.c_str(), data.length());
-	m_callback(file, dataUse, send);
+	m_callback(file, dataUse, send, serverName);
 	delete[]dataUse;
 	return TRUE;
 }
@@ -48,13 +48,80 @@ void CHttpRecv::StartId(DWORD _id, wstring & _file)
 		CPackData data;
 		data.id = _id;
 		data.file = _file;
-		data.time = GetLocaleTimestampI ();
-
+		data.time = GetLocaleTimestampI();
+		data.serverName = GetServerName(_id);
 		//OutputDebugPrintf(L"AiHttpHook:StartId:%d,%s",data.id, data.file.c_str());
 		EnterCriticalSection(&m_cs);
 		m_data.push_back(data);
 		LeaveCriticalSection(&m_cs);  
 	}
+}
+
+void CHttpRecv::SaveServerName(DWORD _id, wstring & _serverName)
+{
+	if (IsIdExist(_id) == false)
+	{
+		CPackServerName data;
+		data.id = _id;
+		data.serverName = _serverName;
+
+		EnterCriticalSection(&m_cs);
+		m_serverName.push_back(data);
+		LeaveCriticalSection(&m_cs);  
+	}
+}
+
+
+void CHttpRecv::AddServerName(DWORD _id, wstring & _serverName)
+{
+	IsServerNameIdExist(_id); //清除之前有的_id
+	CPackServerName data;
+	data.id = _id;
+	data.serverName = _serverName;
+	EnterCriticalSection(&m_cs);
+	m_serverName.push_back(data);
+	LeaveCriticalSection(&m_cs);  
+}
+
+wstring CHttpRecv::GetServerName(DWORD _id)
+{
+	EnterCriticalSection(&m_cs);
+	for(PackServerNameList::iterator it = m_serverName.begin(); it != m_serverName.end();)
+	{
+		if (it->id == _id)
+		{
+			wstring name = it->serverName;
+			m_serverName.erase(it);
+			LeaveCriticalSection(&m_cs);  
+			return name;
+		}		
+		else
+		{
+			++it;
+		}
+	}
+	LeaveCriticalSection(&m_cs);  
+	return L"";
+}
+
+
+bool CHttpRecv::IsServerNameIdExist(DWORD _id)
+{
+	EnterCriticalSection(&m_cs);
+	for(PackServerNameList::iterator it = m_serverName.begin(); it != m_serverName.end();)
+	{
+		if (it->id == _id)
+		{
+			m_serverName.erase(it);
+			LeaveCriticalSection(&m_cs);  
+		}		
+		else
+		{
+			++it;
+		}
+	}
+	LeaveCriticalSection(&m_cs);  
+	return false;
 }
 
 void CHttpRecv::PushData(DWORD _id, string & _data)
@@ -99,7 +166,7 @@ bool CHttpRecv::IsIdExist(DWORD _id)
 	return false;
 }
 
-string CHttpRecv::CloseId(DWORD _id, wstring & _file, string & _send)
+string CHttpRecv::CloseId(DWORD _id, wstring & _file, string & _send, wstring & _serverName)
 {
 	string dat = "";
 	EnterCriticalSection(&m_cs);
@@ -110,6 +177,7 @@ string CHttpRecv::CloseId(DWORD _id, wstring & _file, string & _send)
 			dat = it->dat;
 			_file = it->file;
 			_send = it->send;
+			_serverName = it->serverName;
 			if (_file.length() > 128)
 			{
 				_file = L"LongData";
@@ -149,7 +217,7 @@ bool CHttpRecv::CheckIdTime()
 		{
 			//OutputDebugPrintf(L"AiHttpHook:CheckIdTimeOutClose:%d,%s", m_data[i].id, m_data[i].file);
 			m_data[i].end = TRUE;
-			Call(ConvertUnicodeToMultiBytes(m_data[i].file).c_str(), m_data[i].dat, m_data[i].send.c_str());
+			Call(ConvertUnicodeToMultiBytes(m_data[i].file).c_str(), m_data[i].dat, m_data[i].send.c_str(),ConvertUnicodeToMultiBytes(m_data[i].serverName).c_str());
 		}
 	}
 
@@ -176,6 +244,16 @@ CPackData::CPackData(void)
 }
 
 CPackData::~CPackData(void)
+{
+
+}
+
+CPackServerName::CPackServerName(void)
+{
+
+}
+
+CPackServerName::~CPackServerName(void)
 {
 
 }
