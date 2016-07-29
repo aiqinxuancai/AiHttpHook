@@ -46,8 +46,7 @@ public:
 	BOOL Call(const char * file, string & data, const char * send, const char * serverName); //, DWORD _data_len;
 	DWORD GetLocaleTimestampI();
 	void StartId(DWORD _id, wstring & _file);
-	void SaveServerName(DWORD _id, wstring & _serverName);
-	void AddServerName(DWORD _id, wstring & _serverName);
+	void AddServerName(DWORD _id, wstring &  _serverName);
 	wstring GetServerName(DWORD _id);
 	bool IsServerNameIdExist(DWORD _id);
 	void PushData(DWORD _id, string & _data);

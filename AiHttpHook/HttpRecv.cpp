@@ -2,6 +2,7 @@
 #include "HttpRecv.h"
 #include "UnicodeConv.h"
 #include "DebugString.h"
+#include <time.h>
 
 
 CHttpRecv::CHttpRecv(void)
@@ -57,35 +58,23 @@ void CHttpRecv::StartId(DWORD _id, wstring & _file)
 	}
 }
 
-void CHttpRecv::SaveServerName(DWORD _id, wstring & _serverName)
-{
-	if (IsIdExist(_id) == false)
-	{
-		CPackServerName data;
-		data.id = _id;
-		data.serverName = _serverName;
-
-		EnterCriticalSection(&m_cs);
-		m_serverName.push_back(data);
-		LeaveCriticalSection(&m_cs);  
-	}
-}
-
-
 void CHttpRecv::AddServerName(DWORD _id, wstring & _serverName)
 {
 	IsServerNameIdExist(_id); //清除之前有的_id
 	CPackServerName data;
 	data.id = _id;
-	data.serverName = _serverName;
-	EnterCriticalSection(&m_cs);
-	m_serverName.push_back(data);
-	LeaveCriticalSection(&m_cs);  
+	data.serverName.append(_serverName);
+	//EnterCriticalSection(&m_cs);
+	//m_serverName.push_back(data);
+	//LeaveCriticalSection(&m_cs); 
+
+	//OutputDebugPrintf(L"AiHttpHook:AddServerName:(%d)%d -> %s", m_serverName.size(), data.id, data.serverName);
 }
 
 wstring CHttpRecv::GetServerName(DWORD _id)
 {
 	EnterCriticalSection(&m_cs);
+	//OutputDebugPrintf(L"AiHttpHook:GetServerNameId:%d", _id);
 	for(PackServerNameList::iterator it = m_serverName.begin(); it != m_serverName.end();)
 	{
 		if (it->id == _id)
@@ -93,6 +82,7 @@ wstring CHttpRecv::GetServerName(DWORD _id)
 			wstring name = it->serverName;
 			m_serverName.erase(it);
 			LeaveCriticalSection(&m_cs);  
+			//OutputDebugPrintf(L"AiHttpHook:GetServerName:%s", name);
 			return name;
 		}		
 		else
@@ -112,6 +102,7 @@ bool CHttpRecv::IsServerNameIdExist(DWORD _id)
 	{
 		if (it->id == _id)
 		{
+			//OutputDebugPrintf(L"AiHttpHook:IsServerNameIdExist:Delete:%d -> %s", _id, it->serverName.c_str() );
 			m_serverName.erase(it);
 			LeaveCriticalSection(&m_cs);  
 		}		
