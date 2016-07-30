@@ -214,6 +214,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HookNameToHost.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\HttpRecv.cpp"
 				>
 			</File>
@@ -257,6 +261,10 @@
 			</File>
 			<File
 				RelativePath=".\HookFun.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HookNameToHost.h"
 				>
 			</File>
 			<File

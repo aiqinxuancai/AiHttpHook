@@ -7,6 +7,7 @@
 #include "HookFun.h"
 #include "HttpRecv.h"
 #include "UnicodeConv.h"
+#include "HookNameToHost.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //¾²Ì¬Ô­º¯Êý
@@ -136,10 +137,15 @@ AIHTTPHOOK_API int StartPageHook(PVOID _proc)
 	HookAPI(&(PVOID&)OLD_InternetCloseHandle, New_InternetCloseHandle);
 	OutputDebugPrintf(L"AiHttpHook:StartPageHook:#4");
 	HookAPI(&(PVOID&)OLD_InternetReadFile, New_InternetReadFile);
-	OutputDebugPrintf(L"AiHttpHook:StartPageHook:End");
+	OutputDebugPrintf(L"AiHttpHook:StartPageHook:#5");
 
-	HookAPI(&(PVOID&)OLD_InternetConnectW, New_InternetConnectW);
+	//HookAPI(&(PVOID&)OLD_connect, New_connect);
+
+	//HookAPI(&(PVOID&)OLD_InternetConnectW, New_InternetConnectW);
 	OutputDebugPrintf(L"AiHttpHook:StartPageHook:End");
+	
+
+	
 
 	return 0;
 }
