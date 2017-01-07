@@ -29,7 +29,6 @@ static HINTERNET (WINAPI * OLD_InternetConnectW)(HINTERNET hInternet, LPCWSTR lp
 HINTERNET WINAPI New_InternetConnectW( HINTERNET hInternet, LPCWSTR lpszServerName, INTERNET_PORT nServerPort, LPCWSTR lpszUserName, LPCWSTR lpszPassword,
 								 DWORD dwService, DWORD dwFlags, DWORD_PTR dwContext)
 {
-
 	HINTERNET ret = OLD_InternetConnectW(hInternet, lpszServerName, nServerPort, lpszUserName,lpszPassword,dwService,dwFlags,dwContext);
 	CHttpRecv::Instance().AddServerName((DWORD)ret, wstring(lpszServerName));
 	
