@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Singleton.hpp"
+#include "AiBytes.h"
 
 class CPackServerName
 {
@@ -24,6 +25,7 @@ public:
 	DWORD time ;
 	wstring file;
 	string dat;
+	AiBytes data;
 	string send;
 	BOOL end;
 	wstring serverName; //·þÎñÆ÷ÓòÃû
@@ -50,6 +52,7 @@ public:
 	wstring GetServerName(DWORD _id);
 	bool IsServerNameIdExist(DWORD _id);
 	void PushData(DWORD _id, string & _data);
+	void PushData(DWORD _id, char * _data, UINT _len);
 	void PushSendData(DWORD _id, string & _data);
 	bool IsIdExist(DWORD _id);
 	string CloseId(DWORD _id, wstring & _file, string & _send, wstring & _serverName);

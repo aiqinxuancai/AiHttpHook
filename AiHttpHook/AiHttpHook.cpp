@@ -30,7 +30,7 @@ HINTERNET WINAPI New_InternetConnectW( HINTERNET hInternet, LPCWSTR lpszServerNa
 								 DWORD dwService, DWORD dwFlags, DWORD_PTR dwContext)
 {
 	HINTERNET ret = OLD_InternetConnectW(hInternet, lpszServerName, nServerPort, lpszUserName,lpszPassword,dwService,dwFlags,dwContext);
-	CHttpRecv::Instance().AddServerName((DWORD)ret, wstring(lpszServerName));
+	CHttpRecv::Instance().AddServerName((DWORD)ret, wstring(lpszServerName)); //为ID添加Host
 	
 	return ret;
 }
@@ -41,13 +41,16 @@ BOOL WINAPI New_InternetReadFile( HINTERNET hFile,LPVOID lpBuffer,DWORD dwNumber
 	
 	if (dwNumberOfBytesToRead > 0)
 	{
+		
 		string readData = "";
-		char * data = new char[dwNumberOfBytesToRead+2];
-		memset(data,0,dwNumberOfBytesToRead+2);
+		char * data = new char[dwNumberOfBytesToRead + 2];
+		memset(data, 0, dwNumberOfBytesToRead + 2);
 		memcpy(data, lpBuffer, dwNumberOfBytesToRead);
 		readData = data; //不能使用append 因为这个函数不会在0x00位置截断
 		delete [] data;
-		CHttpRecv::Instance().PushData((DWORD)hFile, readData);
+		CHttpRecv::Instance().PushData((DWORD)hFile, readData); //为ID添加返回的数据
+		//CHttpRecv::Instance().PushData((DWORD)hFile, (char*)lpBuffer, dwNumberOfBytesToRead); //为ID添加返回的数据
+		
 	}
 	return ret;
 }
@@ -63,7 +66,7 @@ BOOL WINAPI New_InternetCloseHandle(HINTERNET hRequest)
 	if (retByte.empty() == false)
 	{
 		CHttpRecv::Instance().CheckIdTime();
-		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(file).c_str(), retByte, send.c_str(),ConvertUnicodeToMultiBytes(serverName).c_str());
+		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(file).c_str(), retByte, send.c_str(),ConvertUnicodeToMultiBytes(serverName).c_str()); //发送到Call一个完整的包
 	}
 	return ret;
 }
@@ -79,7 +82,7 @@ BOOL WINAPI New_HttpSendRequestW(HINTERNET hRequest,LPCWSTR lpszHeaders,DWORD dw
 		memcpy(data,lpOptional,dwOptionalLength);
 		postData.append(data);
 		delete [] data;
-		CHttpRecv::Instance().PushSendData((DWORD)hRequest, postData);
+		CHttpRecv::Instance().PushSendData((DWORD)hRequest, postData); //为ID添加请求的地址
 
 	}
 	
@@ -105,14 +108,15 @@ HINTERNET WINAPI New_HttpOpenRequestW(
 	string retByte = CHttpRecv::Instance().CloseId((DWORD)ret, file, send, serverName);
 	if (retByte.empty() == false)
 	{
-		CHttpRecv::Instance().CheckIdTime();
+		CHttpRecv::Instance().CheckIdTime(); 
 		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(file).c_str(), retByte, send.c_str(),ConvertUnicodeToMultiBytes(serverName).c_str());
 	}
 	
 	wstring ver = lpszVerb;
 	if (ver == L"POST")
 	{
-		CHttpRecv::Instance().StartId((DWORD)ret, wstring(lpszObjectName) );
+
+		CHttpRecv::Instance().StartId((DWORD)ret, wstring(lpszObjectName) ); //开始记录一个包
 	}
 
 	return ret;

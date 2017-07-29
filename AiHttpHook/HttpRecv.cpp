@@ -25,7 +25,8 @@ BOOL CHttpRecv::SetCallback(PVOID _proc)
 BOOL CHttpRecv::Call(const char * file, string & data, const char * send, const char * serverName) //, DWORD _data_len
 {
 	//为了避免其他程序读到非0x00结尾 所以先copy一下
-	int len = data.length() + 2;
+
+	UINT len = data.length() + 2;
 	char * dataUse = new char[len];
 	memset(dataUse, 0, len);
 	memcpy(dataUse, data.c_str(), data.length());
@@ -44,8 +45,10 @@ DWORD CHttpRecv::GetLocaleTimestampI()
 
 void CHttpRecv::StartId(DWORD _id, wstring & _file)
 {
+	OutputDebugPrintf(L"AiHttpHook:准备记录包:%d,%s", _id, _file);
 	if (IsIdExist(_id) == false)
 	{
+		OutputDebugPrintf(L"AiHttpHook:开始记录包:%d,%s", _id, _file);
 		CPackData data;
 		data.id = _id;
 		data.file = _file;
@@ -68,7 +71,7 @@ void CHttpRecv::AddServerName(DWORD _id, wstring & _serverName)
 	//m_serverName.push_back(data);
 	//LeaveCriticalSection(&m_cs); 
 
-	OutputDebugPrintf(L"AiHttpHook:AddServerName:(%d)%d -> %s", m_serverName.size(), data.id, data.serverName);
+	OutputDebugPrintf(L"AiHttpHook:增加Host:%d,%s", data.id, data.serverName);
 }
 
 wstring CHttpRecv::GetServerName(DWORD _id)
@@ -123,7 +126,19 @@ void CHttpRecv::PushData(DWORD _id, string & _data)
 		if (m_data[i].id == _id)
 		{
 			m_data[i].dat = m_data[i].dat + _data;
-			//m_data[i].dat.append(_data);
+		}
+	}
+	LeaveCriticalSection(&m_cs);  
+}
+
+void CHttpRecv::PushData(DWORD _id, char * _data, UINT _len)
+{
+	EnterCriticalSection(&m_cs);
+	for (int i = 0; i < m_data.size(); i++)
+	{
+		if (m_data[i].id == _id)
+		{
+			m_data[i].data.add(_data, _len);
 		}
 	}
 	LeaveCriticalSection(&m_cs);  
@@ -142,6 +157,7 @@ void CHttpRecv::PushSendData(DWORD _id, string & _data)
 	LeaveCriticalSection(&m_cs);  
 }
 
+//是否存在这个包
 bool CHttpRecv::IsIdExist(DWORD _id)
 {
 	EnterCriticalSection(&m_cs);
@@ -157,10 +173,12 @@ bool CHttpRecv::IsIdExist(DWORD _id)
 	return false;
 }
 
+//关闭一个包的接收
 string CHttpRecv::CloseId(DWORD _id, wstring & _file, string & _send, wstring & _serverName)
 {
 	string dat = "";
 	EnterCriticalSection(&m_cs);
+	OutputDebugPrintf(L"AiHttpHook:完成并发送:%d,%s", _id, _file);
 	for(PackList::iterator it = m_data.begin(); it != m_data.end();)
 	{
 		if (it->id == _id)
@@ -204,9 +222,9 @@ bool CHttpRecv::CheckIdTime()
 	EnterCriticalSection(&m_cs);
 	for (int i = 0; i < m_data.size(); i++)
 	{
-		if (time - m_data[i].time > 12) //>12sec
+		if (time - m_data[i].time > 30) //>12sec
 		{
-			//OutputDebugPrintf(L"AiHttpHook:CheckIdTimeOutClose:%d,%s", m_data[i].id, m_data[i].file);
+			OutputDebugPrintf(L"AiHttpHook:超时关闭数据收取:%d,%s", m_data[i].id, m_data[i].file);
 			m_data[i].end = TRUE;
 			Call(ConvertUnicodeToMultiBytes(m_data[i].file).c_str(), m_data[i].dat, m_data[i].send.c_str(),ConvertUnicodeToMultiBytes(m_data[i].serverName).c_str());
 		}
