@@ -1,22 +1,25 @@
 #include "stdafx.h"
 
 
-void OutputDebugPrintf(const wchar_t* strOutputString, ...)
+void PrintFDbg(const wchar_t *strOutputString, ...)
 {
-	wchar_t strBuffer[40960] = {0};
-	va_list vlArgs;
+	va_list vlArgs = NULL;
 	va_start(vlArgs, strOutputString);
-	_vsnwprintf_s(strBuffer, sizeof(strBuffer) - 1, strOutputString, vlArgs);
+	size_t nLen = _vscwprintf(strOutputString, vlArgs) + 1;
+	wchar_t *strBuffer = new wchar_t[nLen];
+	_vsnwprintf_s(strBuffer, nLen, nLen, strOutputString, vlArgs);
 	va_end(vlArgs);
 	OutputDebugStringW(strBuffer);
+	delete [] strBuffer;
 }
-
-void OutputDebugPrintf(const char* strOutputString, ...)
+void PrintFDbg(const char *strOutputString, ...)
 {
-	char strBuffer[40960] = {0};
-	va_list vlArgs;
+	va_list vlArgs = NULL;
 	va_start(vlArgs, strOutputString);
-	_vsnprintf_s(strBuffer, sizeof(strBuffer) - 1, strOutputString, vlArgs);
+	size_t nLen = _vscprintf(strOutputString, vlArgs) + 1;
+	char *strBuffer = new char[nLen];
+	_vsnprintf_s(strBuffer, nLen, nLen, strOutputString, vlArgs);
 	va_end(vlArgs);
 	OutputDebugStringA(strBuffer);
+	delete [] strBuffer;
 }

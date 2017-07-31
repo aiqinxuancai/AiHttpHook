@@ -1,3 +1,3 @@
 #pragma once
-void OutputDebugPrintf(const wchar_t* strOutputString, ...);
-void OutputDebugPrintf(const char* strOutputString, ...);
+void PrintFDbg(const wchar_t *strOutputString, ...);
+void PrintFDbg(const char *strOutputString, ...);

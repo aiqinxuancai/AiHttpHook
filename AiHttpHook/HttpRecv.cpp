@@ -68,7 +68,7 @@ void CHttpRecv::AddServerName(DWORD _id, wstring & _serverName)
 	//m_serverName.push_back(data);
 	//LeaveCriticalSection(&m_cs); 
 
-	OutputDebugPrintf(L"AiHttpHook:AddServerName:(%d)%d -> %s", m_serverName.size(), data.id, data.serverName);
+	PrintFDbg(L"AiHttpHook:AddServerName:(%d)%d -> %s", m_serverName.size(), data.id, data.serverName);
 }
 
 wstring CHttpRecv::GetServerName(DWORD _id)
@@ -204,7 +204,7 @@ bool CHttpRecv::CheckIdTime()
 	EnterCriticalSection(&m_cs);
 	for (int i = 0; i < m_data.size(); i++)
 	{
-		if (time - m_data[i].time > 12) //>12sec
+		if (time - m_data[i].time > 30) //>12sec
 		{
 			//OutputDebugPrintf(L"AiHttpHook:CheckIdTimeOutClose:%d,%s", m_data[i].id, m_data[i].file);
 			m_data[i].end = TRUE;
