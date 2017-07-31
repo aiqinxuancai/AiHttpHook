@@ -68,7 +68,7 @@ void CHttpRecv::AddServerName(DWORD _id, wstring & _serverName)
 	//m_serverName.push_back(data);
 	//LeaveCriticalSection(&m_cs); 
 
-	PrintFDbg(L"AiHttpHook:AddServerName:(%d)%d -> %s", m_serverName.size(), data.id, data.serverName);
+	//PrintFDbg(L"AiHttpHook:AddServerName:(%d)%d -> %s", m_serverName.size(), data.id, data.serverName);
 }
 
 wstring CHttpRecv::GetServerName(DWORD _id)
