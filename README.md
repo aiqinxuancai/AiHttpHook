@@ -1,7 +1,7 @@
 # AiHttpHook
 使用APIHOOK技术对Wininet.dll的相关函数进行Hook用于拦截当前进程的Http请求，应用于ToukenBrowser的3.5及更早的版本。
 
-Use APIHook technology to perform Hooks on Wininet.dll functions(unicode) to intercept Http and https requests for the current process.
+Use APIHook technology to perform Hooks on Wininet.dll functions(unicode) to intercept Http and https requests for the current process (x86 and x64).
 
 VC2008 dll
 
