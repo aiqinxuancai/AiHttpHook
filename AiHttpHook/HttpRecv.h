@@ -10,7 +10,7 @@ public:
 	~CPackhostName(void);
 
 public:
-	DWORD id ;
+	HINTERNET id ;
 	wstring hostName; //·þÎñÆ÷ÓòÃû
 };
 
@@ -21,7 +21,7 @@ public:
 	~CPackData(void);
 
 public:
-	DWORD id ;
+	HINTERNET id ;
 	DWORD time;
 	wstring path; 
 	string responseData;
@@ -50,14 +50,14 @@ public:
 	//BOOL Call(const char * file, const char * data, const char * send); //, DWORD _data_len;
 	BOOL Call(const char * path, string & responseData, const char * postData, const char * hostName); //, DWORD _data_len;
 	DWORD GetLocaleTimestampI();
-	void StartId(DWORD id, wstring & file);
-	void AddhostName(DWORD id, wstring &  hostName);
-	wstring GetHostName(DWORD id);
-	bool IshostNameIdExist(DWORD id);
-	void PushData(DWORD id, string & data);
-	void PushSendData(DWORD id, string & data);
-	bool IsIdExist(DWORD id);
-	string CloseId(DWORD id, wstring & file, string & send, wstring & hostName);
+	void StartId(HINTERNET id, wstring & file);
+	void AddhostName(HINTERNET id, wstring &  hostName);
+	wstring GetHostName(HINTERNET id);
+	bool IshostNameIdExist(HINTERNET id);
+	void PushData(HINTERNET id, string & data);
+	void PushSendData(HINTERNET id, string & data);
+	bool IsIdExist(HINTERNET id);
+	string CloseId(HINTERNET id, wstring & file, string & send, wstring & hostName);
 	bool CheckIdTime();
 private:
 	PackList m_data;

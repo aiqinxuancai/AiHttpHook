@@ -30,7 +30,7 @@ HINTERNET WINAPI New_InternetConnectW( HINTERNET hInternet, LPCWSTR lpszhostName
 								 DWORD dwService, DWORD dwFlags, DWORD_PTR dwContext)
 {
 	HINTERNET ret = OLD_InternetConnectW(hInternet, lpszhostName, nServerPort, lpszUserName,lpszPassword,dwService,dwFlags,dwContext);
-	CHttpRecv::Instance().AddhostName((DWORD)ret, wstring(lpszhostName)); //为ID添加Host
+	CHttpRecv::Instance().AddhostName((HINTERNET)ret, wstring(lpszhostName)); //为ID添加Host
 	
 	return ret;
 }
@@ -48,7 +48,7 @@ BOOL WINAPI New_InternetReadFile( HINTERNET hFile,LPVOID lpBuffer,DWORD dwNumber
 		memcpy(data, lpBuffer, dwNumberOfBytesToRead);
 		readData = data; //不能使用append 因为这个函数不会在0x00位置截断
 		delete [] data;
-		CHttpRecv::Instance().PushData((DWORD)hFile, readData); //为ID添加返回的数据
+		CHttpRecv::Instance().PushData((HINTERNET)hFile, readData); //为ID添加返回的数据
 		//CHttpRecv::Instance().PushData((DWORD)hFile, (char*)lpBuffer, dwNumberOfBytesToRead); //为ID添加返回的数据
 		
 	}
@@ -62,7 +62,7 @@ BOOL WINAPI New_InternetCloseHandle(HINTERNET hRequest)
 	wstring file = L"";
 	wstring hostName = L"";
 	string send = "";
-	string retByte = CHttpRecv::Instance().CloseId((DWORD)hRequest, file, send, hostName);
+	string retByte = CHttpRecv::Instance().CloseId((HINTERNET)hRequest, file, send, hostName);
 	if (retByte.empty() == false)
 	{
 		CHttpRecv::Instance().CheckIdTime();
@@ -82,7 +82,7 @@ BOOL WINAPI New_HttpSendRequestW(HINTERNET hRequest,LPCWSTR lpszHeaders,DWORD dw
 		memcpy(data,lpOptional,dwOptionalLength);
 		postData.append(data);
 		delete [] data;
-		CHttpRecv::Instance().PushSendData((DWORD)hRequest, postData); //为ID添加请求的地址
+		CHttpRecv::Instance().PushSendData((HINTERNET)hRequest, postData); //为ID添加请求的地址
 
 	}
 	
@@ -105,7 +105,7 @@ HINTERNET WINAPI New_HttpOpenRequestW(
 	wstring file = L"";
 	string send = "";
 	wstring hostName = L"";
-	string retByte = CHttpRecv::Instance().CloseId((DWORD)ret, file, send, hostName);
+	string retByte = CHttpRecv::Instance().CloseId((HINTERNET)ret, file, send, hostName);
 	if (retByte.empty() == false)
 	{
 		CHttpRecv::Instance().CheckIdTime(); 
@@ -116,7 +116,7 @@ HINTERNET WINAPI New_HttpOpenRequestW(
 	if (ver == L"POST")
 	{
 
-		CHttpRecv::Instance().StartId((DWORD)ret, wstring(lpszObjectName) ); //开始记录一个包
+		CHttpRecv::Instance().StartId((HINTERNET)ret, wstring(lpszObjectName) ); //开始记录一个包
 	}
 
 	return ret;
