@@ -3,11 +3,11 @@
 #include "Singleton.hpp"
 #include "AiBytes.h"
 
-class CPackhostName
+class CPackHostName
 {
 public:
-	CPackhostName(void);
-	~CPackhostName(void);
+	CPackHostName(void);
+	~CPackHostName(void);
 
 public:
 	HINTERNET id ;
@@ -22,21 +22,23 @@ public:
 
 public:
 	HINTERNET id ;
-	DWORD time;
+	DWORD startTime;
 	wstring path; 
 	string responseData;
 	string postData;
+	wstring requestHeaders;
 	BOOL isEnd;
 	wstring hostName; //·þÎñÆ÷ÓòÃû
 };
 
 typedef vector<CPackData> PackList;
-typedef vector<CPackhostName> PackHostNameList;
+typedef vector<CPackHostName> PackHostNameList;
 
 typedef void (_stdcall *DataCallback)(const char * path, 
 	const char * responseData, 
 	const char * postData, 
-	const char * hostName);//, DWORD data_len
+	const char * hostName,
+	const char * requestHeaders);
 
 class CHttpRecv : public Singleton<CHttpRecv>
 {
@@ -48,16 +50,18 @@ public:
 	BOOL SetCallback(PVOID _proc);
 	//BOOL Call(const char * file, const char * data, const char * send, DWORD _data_len);
 	//BOOL Call(const char * file, const char * data, const char * send); //, DWORD _data_len;
-	BOOL Call(const char * path, string & responseData, const char * postData, const char * hostName); //, DWORD _data_len;
+	BOOL Call(const char * path, string & responseData, const char * postData, const char * hostName, const char * requestHeaders); //, DWORD _data_len;
 	DWORD GetLocaleTimestampI();
 	void StartId(HINTERNET id, wstring & file);
-	void AddhostName(HINTERNET id, wstring &  hostName);
+	void AddHostName(HINTERNET id, wstring &  hostName);
 	wstring GetHostName(HINTERNET id);
-	bool IshostNameIdExist(HINTERNET id);
+	bool IsHostNameIdExist(HINTERNET id);
 	void PushData(HINTERNET id, string & data);
-	void PushSendData(HINTERNET id, string & data);
+	void SetPostData(HINTERNET id, string & data);
+	void SetRequestHeaders(HINTERNET id, wstring & headers);
 	bool IsIdExist(HINTERNET id);
-	string CloseId(HINTERNET id, wstring & file, string & send, wstring & hostName);
+	void CloseRequestAndCall(HINTERNET id);
+	string CloseId(HINTERNET id, wstring & path, string & postData, wstring & hostName, wstring & requestHeaders);
 	bool CheckIdTime();
 private:
 	PackList m_data;

@@ -5,6 +5,9 @@
 #include <time.h>
 
 
+// request max wait time
+CONST int REQUESTTIMEOUT = 30;
+
 CHttpRecv::CHttpRecv(void)
 {
 	InitializeCriticalSection(&m_cs);
@@ -16,20 +19,23 @@ CHttpRecv::~CHttpRecv(void)
 
 BOOL CHttpRecv::SetCallback(PVOID callback)
 {
-	//typedef int(FUNC1)(int);  
-	//int (*func)(int,int);  
 	m_callback = (DataCallback)callback;
 	return TRUE;
 }
 
-BOOL CHttpRecv::Call(const char * path, string & responseData, const char * postData, const char * hostName) //, DWORD _data_len
+BOOL CHttpRecv::Call(const char * path, 
+	string & responseData, 
+	const char * postData, 
+	const char * hostName, 
+	const char * requestHeaders) //, DWORD _data_len
 {
 	//为了避免其他程序读到非0x00结尾 所以先copy一下
 	size_t len = responseData.length() + 2;
 	char * dataUse = new char[len];
 	memset(dataUse, 0, len);
 	memcpy(dataUse, responseData.c_str(), responseData.length());
-	m_callback(path, dataUse, postData, hostName);
+
+	m_callback(path, dataUse, postData, hostName, requestHeaders);
 	delete[]dataUse;
 	return TRUE;
 }
@@ -49,19 +55,20 @@ void CHttpRecv::StartId(HINTERNET id, wstring & path)
 		CPackData data;
 		data.id = id;
 		data.path = path;
-		data.time = GetLocaleTimestampI();
+		data.startTime = GetLocaleTimestampI();
 		data.hostName = GetHostName(id);
-		//OutputDebugPrintf(L"AiHttpHook:StartId:%d,%s",data.id, data.file.c_str());
+
+
 		EnterCriticalSection(&m_cs);
 		m_data.push_back(data);
 		LeaveCriticalSection(&m_cs);  
 	}
 }
 
-void CHttpRecv::AddhostName(HINTERNET id, wstring & hostName)
+void CHttpRecv::AddHostName(HINTERNET id, wstring & hostName)
 {
-	IshostNameIdExist(id); //清除之前有的id
-	CPackhostName data;
+	IsHostNameIdExist(id); //清除之前有的id
+	CPackHostName data;
 	data.id = id;
 	data.hostName.append(hostName);
 	//EnterCriticalSection(&m_cs);
@@ -93,7 +100,7 @@ wstring CHttpRecv::GetHostName(HINTERNET id)
 }
 
 
-bool CHttpRecv::IshostNameIdExist(HINTERNET id)
+bool CHttpRecv::IsHostNameIdExist(HINTERNET id)
 {
 	EnterCriticalSection(&m_cs);
 	for(PackHostNameList::iterator it = m_hostName.begin(); it != m_hostName.end();)
@@ -112,30 +119,44 @@ bool CHttpRecv::IshostNameIdExist(HINTERNET id)
 	return false;
 }
 
-void CHttpRecv::PushData(HINTERNET id, string & _data)
+void CHttpRecv::PushData(HINTERNET id, string & data)
 {
 	EnterCriticalSection(&m_cs);
 	for (UINT i = 0; i < m_data.size(); i++)
 	{
 		if (m_data[i].id == id)
 		{
-			m_data[i].responseData = m_data[i].responseData + _data;
+			m_data[i].responseData = m_data[i].responseData + data;
 		}
 	}
 	LeaveCriticalSection(&m_cs);  
 }
 
-void CHttpRecv::PushSendData(HINTERNET id, string & _data)
+void CHttpRecv::SetPostData(HINTERNET id, string & data)
 {
 	EnterCriticalSection(&m_cs);
 	for (UINT i = 0; i < m_data.size(); i++)
 	{
 		if (m_data[i].id == id)
 		{
-			m_data[i].postData = _data;
+			m_data[i].postData = data;
 		}
 	}
 	LeaveCriticalSection(&m_cs);  
+}
+
+void CHttpRecv::SetRequestHeaders(HINTERNET id, wstring & headers)
+{
+	EnterCriticalSection(&m_cs);
+	for (UINT i = 0; i < m_data.size(); i++)
+	{
+		if (m_data[i].id == id)
+		{
+			PrintFDbg(L"AiHttpHook#2:%s", wstring(headers).c_str());
+			m_data[i].requestHeaders = headers;
+		}
+	}
+	LeaveCriticalSection(&m_cs);
 }
 
 bool CHttpRecv::IsIdExist(HINTERNET id)
@@ -153,7 +174,27 @@ bool CHttpRecv::IsIdExist(HINTERNET id)
 	return false;
 }
 
-string CHttpRecv::CloseId(HINTERNET id, wstring & _file, string & _send, wstring & _hostName)
+void CHttpRecv::CloseRequestAndCall(HINTERNET id)
+{
+	wstring path = L"";
+	wstring hostName = L"";
+	string postData = "";
+	wstring requestHeaders = L"";
+	string retByte = CHttpRecv::Instance().CloseId((HINTERNET)id, path, postData, hostName, requestHeaders);
+
+	if (retByte.empty() == false)
+	{
+		CHttpRecv::Instance().CheckIdTime();
+		CHttpRecv::Instance().Call(ConvertUnicodeToMultiBytes(path).c_str(),
+			retByte,
+			postData.c_str(),
+			ConvertUnicodeToMultiBytes(hostName).c_str(),
+			ConvertUnicodeToMultiBytes(requestHeaders).c_str()); //发送到Call一个完整的包
+	}
+}
+
+
+string CHttpRecv::CloseId(HINTERNET id, wstring & path, string & postData, wstring & hostName, wstring & requestHeaders)
 {
 	string dat = "";
 	EnterCriticalSection(&m_cs);
@@ -162,13 +203,14 @@ string CHttpRecv::CloseId(HINTERNET id, wstring & _file, string & _send, wstring
 		if (it->id == id)
 		{
 			dat = it->responseData;
-			_file = it->path;
-			_send = it->postData;
-			_hostName = it->hostName;
-			if (_file.length() > 128)
-			{
-				_file = L"LongData";
-			}
+			path = it->path;
+			postData = it->postData;
+			hostName = it->hostName;
+			requestHeaders = it->requestHeaders;
+			//if (path.length() > 128)
+			//{
+			//	path = L"LongData";
+			//}
 
 			m_data.erase(it);
 
@@ -192,13 +234,14 @@ bool CHttpRecv::CheckIdTime()
 	EnterCriticalSection(&m_cs);
 	for (UINT i = 0; i < m_data.size(); i++)
 	{
-		if (time - m_data[i].time > 30) //>12sec
+		if (time - m_data[i].startTime > REQUESTTIMEOUT) //>12sec
 		{
 			m_data[i].isEnd = TRUE;
 			Call(ConvertUnicodeToMultiBytes(m_data[i].path).c_str(), 
 				m_data[i].responseData, 
 				m_data[i].postData.c_str(),
-				ConvertUnicodeToMultiBytes(m_data[i].hostName).c_str());
+				ConvertUnicodeToMultiBytes(m_data[i].hostName).c_str(),
+				ConvertUnicodeToMultiBytes(m_data[i].requestHeaders).c_str());
 		}
 	}
 
@@ -228,12 +271,12 @@ CPackData::~CPackData(void)
 
 }
 
-CPackhostName::CPackhostName(void)
+CPackHostName::CPackHostName(void)
 {
 
 }
 
-CPackhostName::~CPackhostName(void)
+CPackHostName::~CPackHostName(void)
 {
 
 }

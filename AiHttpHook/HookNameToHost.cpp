@@ -4,10 +4,6 @@
 #include "UnicodeConv.h"
 #include "HookNameToHost.h"
 
-
-
-
-
 struct hostent * WINAPI New_gethostbyname(const char * name)
 {
 	//OutputDebugPrintf(L"AiHttpHook:New_gethostbyname:%s", name);

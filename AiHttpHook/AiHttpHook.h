@@ -10,4 +10,4 @@
 #define AIHTTPHOOK_API __declspec(dllimport)
 #endif
 
-AIHTTPHOOK_API int StartPageHook(void);
+AIHTTPHOOK_API int StartHook(PVOID callback);
