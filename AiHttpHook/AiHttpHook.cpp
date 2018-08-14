@@ -56,6 +56,7 @@ HINTERNET WINAPI New_InternetConnectW( HINTERNET hInternet,
 	DWORD_PTR dwContext)
 {
 	HINTERNET ret = OLD_InternetConnectW(hInternet, lpszhostName, nServerPort, lpszUserName, lpszPassword, dwService, dwFlags, dwContext);
+
 	CHttpRecv::Instance().AddHostName((HINTERNET)ret, wstring(lpszhostName)); //为ID添加Host
 	
 	return ret;
@@ -83,40 +84,29 @@ BOOL WINAPI New_InternetReadFile( HINTERNET hFile,
 }
 
 
-//void erase(string &s, char ch) {
-//	for (int i = 0; i < s.length(); i++) {
-//		if (s[i] == ch) {
-//			s.erase(i, 1);
-//			i--;
-//		}
-//	}
-//}
-//
-//void ShowQueryData(HINTERNET hRequest, DWORD dwInfoLevel)
-//{
-//	DWORD len = 10240;
-//	char * cache = new char[len];
-//	HttpQueryInfoA(hRequest, dwInfoLevel, cache, &len, 0);
-//	string hostString(cache);
-//	PrintFDbg("AiHttpHookHost:%d - %s", dwInfoLevel, hostString.c_str());
-//	delete[]cache;
-//}
+void erase(string &s, char ch) {
+	for (int i = 0; i < s.length(); i++) {
+		if (s[i] == ch) {
+			s.erase(i, 1);
+			i--;
+		}
+	}
+}
+
+void ShowQueryData(HINTERNET hRequest, DWORD dwInfoLevel)
+{
+	DWORD len = 10240;
+	char * cache = new char[len];
+	HttpQueryInfoA(hRequest, dwInfoLevel, cache, &len, 0);
+	string hostString(cache);
+	PrintFDbg("AiHttpHookHost:%d - %s", dwInfoLevel, hostString.c_str());
+	delete[]cache;
+}
 
 
 
 BOOL WINAPI New_InternetCloseHandle(HINTERNET hRequest)
 {
-
-	//if (CHttpRecv::Instance().IsIdExist(hRequest))
-	//{
-	//	ShowQueryData(hRequest, HTTP_QUERY_FLAG_REQUEST_HEADERS);
-	//	ShowQueryData(hRequest, HTTP_QUERY_URI);
-	//	ShowQueryData(hRequest, HTTP_QUERY_SERVER);
-	//	ShowQueryData(hRequest, HTTP_QUERY_REFERER);
-	//	ShowQueryData(hRequest, HTTP_QUERY_HOST);
-	//	ShowQueryData(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF);
-	//}
-
 	BOOL ret = OLD_InternetCloseHandle(hRequest);
 	CHttpRecv::Instance().CloseRequestAndCall(hRequest);
 	return ret;
@@ -168,14 +158,27 @@ HINTERNET WINAPI New_HttpOpenRequestW(
 {
 	HINTERNET ret = OLD_HttpOpenRequestW(hConnect, lpszVerb, lpszObjectName, lpszVersion, lpszReferrer, lplpszAcceptTypes, dwFlags, dwContext);
 
+	//查询
+
+
 	//避免被复用 所以提前检测并关闭
-	CHttpRecv::Instance().CloseRequestAndCall(hConnect);
+	CHttpRecv::Instance().CloseRequestAndCall(ret);
 	
 	wstring mode = lpszVerb;
 	if (mode == L"POST")
 	{
 		CHttpRecv::Instance().StartId((HINTERNET)ret, wstring(lpszObjectName) ); //开始记录一个包
 	}
+
+	//if (CHttpRecv::Instance().IsIdExist(ret))
+	//{
+	//	ShowQueryData(ret, HTTP_QUERY_FLAG_REQUEST_HEADERS);
+	//	ShowQueryData(ret, HTTP_QUERY_URI);
+	//	ShowQueryData(ret, HTTP_QUERY_SERVER);
+	//	ShowQueryData(ret, HTTP_QUERY_REFERER);
+	//	ShowQueryData(ret, HTTP_QUERY_HOST);
+	//	ShowQueryData(ret, HTTP_QUERY_RAW_HEADERS_CRLF);
+	//}
 
 	return ret;
 }
@@ -192,7 +195,7 @@ AIHTTPHOOK_API int StartHook(PVOID callback)
 	HookAPI(&(PVOID&)OLD_InternetReadFile, New_InternetReadFile);
 
 	//HookAPI(&(PVOID&)OLD_connect, New_connect);
-	//HookAPI(&(PVOID&)OLD_InternetConnectW, New_InternetConnectW);
+	HookAPI(&(PVOID&)OLD_InternetConnectW, New_InternetConnectW);
 
 	PrintFDbg(L"AiHttpHook:StartPageHook:End");
 	
