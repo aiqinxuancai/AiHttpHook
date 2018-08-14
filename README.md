@@ -29,7 +29,10 @@ Quick Start (C#)
 
         private static HttpCallback HttpPackCallback;
 
-
+        /// <summary>
+        /// Initialization function
+        /// use this func first.
+        /// </summary>
         public static void Init()
         {
             HttpPackCallback = new HttpCallback(DataRoute);
