@@ -3,36 +3,67 @@
 
 Use APIHook technology to perform Hooks on Wininet.dll functions(unicode) to intercept Http and https requests for the current process (x86 and x64).
 
-VC2008 dll
+vs2017 build
 
 Quick Start (C#)
 ```csharp
+    class AiHttpHook64
+    {
+        [DllImport("AiHttpHook64.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int StartHook(IntPtr callback);
+    }
+
+    class AiHttpHook
+    {
         [DllImport("AiHttpHook.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int StartPageHook(IntPtr _dwNewLong);
+        public static extern int StartHook(IntPtr callback);
+    }
 
+    class Hook
+    {
+        private delegate int HttpCallback(string path, 
+                                          string responseData, 
+                                          string postData, 
+                                          string hostName, 
+                                          string responseHeaders);
 
-        private delegate int HttpCallback(string path, string result, string send, string host);
         private static HttpCallback HttpPackCallback;
 
 
         public static void Init()
         {
-            HttpPackCallback = new HttpCallback(JsonRoute);
-            StartPageHook(Marshal.GetFunctionPointerForDelegate(HttpPackCallback);
+            HttpPackCallback = new HttpCallback(DataRoute);
+            if (Environment.Is64BitProcess)
+            {
+                //64-bit
+                int ret = AiHttpHook64.StartHook(Marshal.GetFunctionPointerForDelegate(HttpPackCallback));
+            }
+            else
+            {
+                int ret = AiHttpHook.StartHook(Marshal.GetFunctionPointerForDelegate(HttpPackCallback));
+            }
         }
 
 
         /// <summary>
-        /// recv func
+        /// callback
         /// </summary>
         /// <param name="path">path</param>
-        /// <param name="result">return data</param>
-        /// <param name="send">post data</param>
-        /// <param name="host">host</param>
+        /// <param name="responseData">responseData</param>
+        /// <param name="postData">postData</param>
+        /// <param name="hostName">hostName</param>
+        /// <param name="responseHeaders">responseHeaders</param>
         /// <returns></returns>
-        public static int JsonRoute(string path, string result, string send, string host)
+        public static int DataRoute(string path, 
+                                    string responseData, 
+                                    string postData, 
+                                    string hostName, 
+                                    string responseHeaders)
         {
+            // use data 
             return 0;
         }
+    }
+    
 ```
 
