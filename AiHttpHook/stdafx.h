@@ -12,6 +12,7 @@
 #include <windows.h>
 #include <string>
 #include <vector>
+#include <map>  
 #include <wininet.h>
 #include <time.h>
 #include "lib/detours/detours.h"

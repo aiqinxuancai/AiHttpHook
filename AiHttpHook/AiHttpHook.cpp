@@ -57,8 +57,9 @@ HINTERNET WINAPI New_InternetConnectW( HINTERNET hInternet,
 {
 	HINTERNET ret = OLD_InternetConnectW(hInternet, lpszhostName, nServerPort, lpszUserName, lpszPassword, dwService, dwFlags, dwContext);
 
-	CHttpRecv::Instance().AddHostName((HINTERNET)ret, wstring(lpszhostName)); //为ID添加Host
-	
+	CHttpRecv::Instance().SetHostName((HINTERNET)ret, wstring(lpszhostName)); //为ID添加Host
+
+	PrintFDbg(L"AiHttpHookHostName:%d - %d - %s", hInternet, ret, wstring(lpszhostName).c_str());
 	return ret;
 }
 
@@ -84,29 +85,48 @@ BOOL WINAPI New_InternetReadFile( HINTERNET hFile,
 }
 
 
-void erase(string &s, char ch) {
-	for (int i = 0; i < s.length(); i++) {
-		if (s[i] == ch) {
-			s.erase(i, 1);
-			i--;
-		}
-	}
-}
-
-void ShowQueryData(HINTERNET hRequest, DWORD dwInfoLevel)
-{
-	DWORD len = 10240;
-	char * cache = new char[len];
-	HttpQueryInfoA(hRequest, dwInfoLevel, cache, &len, 0);
-	string hostString(cache);
-	PrintFDbg("AiHttpHookHost:%d - %s", dwInfoLevel, hostString.c_str());
-	delete[]cache;
-}
+//void erase(string &s, char ch) {
+//	for (int i = 0; i < s.length(); i++) {
+//		if (s[i] == ch) {
+//			s.erase(i, 1);
+//			i--;
+//		}
+//	}
+//}
+//
+//void ShowQueryData(HINTERNET hRequest, DWORD dwInfoLevel)
+//{
+//	DWORD len = 10240;
+//	char * cache = new char[len];
+//	HttpQueryInfoA(hRequest, dwInfoLevel, cache, &len, 0);
+//	string hostString(cache);
+//	PrintFDbg("AiHttpHookHost:%d - %s", dwInfoLevel, hostString.c_str());
+//	delete[]cache;
+//}
 
 
 
 BOOL WINAPI New_InternetCloseHandle(HINTERNET hRequest)
 {
+	if (CHttpRecv::Instance().IsIdExist(hRequest))
+	{
+		DWORD len = 0;
+		char * cache = new char[len];
+		HttpQueryInfoA(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, cache, &len, 0);
+		delete[]cache;
+		if (len > 0)
+		{
+			char * cache = new char[len];
+			HttpQueryInfoA(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, cache, &len, 0);
+			string hostString(cache);
+			delete[]cache;
+			CHttpRecv::Instance().SetResponseHeaders(hRequest, hostString);
+		}
+	}
+
+
+	
+
 	BOOL ret = OLD_InternetCloseHandle(hRequest);
 	CHttpRecv::Instance().CloseRequestAndCall(hRequest);
 	return ret;
@@ -167,7 +187,7 @@ HINTERNET WINAPI New_HttpOpenRequestW(
 	wstring mode = lpszVerb;
 	if (mode == L"POST")
 	{
-		CHttpRecv::Instance().StartId((HINTERNET)ret, wstring(lpszObjectName) ); //开始记录一个包
+		CHttpRecv::Instance().StartId((HINTERNET)ret, hConnect, wstring(lpszObjectName)); //开始记录一个包
 	}
 
 	//if (CHttpRecv::Instance().IsIdExist(ret))
